@@ -4,8 +4,7 @@ import com.iiichz.method.RPCUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +44,7 @@ public class ParamUtils {
     }
 
     public static boolean canGetBasicMethodParam(String paramsMessage, Class<?> cls) {
-        try{
+        try {
             getBasicMethodParam(paramsMessage, cls);
         } catch (Exception e) {
             return false;
@@ -53,7 +52,6 @@ public class ParamUtils {
 
         return true;
     }
-
 
     public static Class<?> getListParameterType(Method method, int i) {
         Parameter[] parameters = method.getParameters();
@@ -64,8 +62,7 @@ public class ParamUtils {
         try {
             genericNameClass = Class.forName(genericName);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            LOGGER.error("Can't find the class, Please check your method!");
+            LOGGER.error("Can't find the class, Please check your method!", e);
         }
         return genericNameClass;
     }
@@ -73,7 +70,6 @@ public class ParamUtils {
     public static Class<?> getSetParameterType(Method method, int i) {
         return getListParameterType(method, i);
     }
-
 
     public static List<Class<?>> getMapParameterType(Method method, int i) {
         List<Class<?>> mapGenericNameClass = new ArrayList<>();
@@ -90,12 +86,22 @@ public class ParamUtils {
             genericNameValueClass = Class.forName(genericNameValue);
             mapGenericNameClass.add(genericNameValueClass);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            LOGGER.error("Can't find the class, Please check your method!");
+            LOGGER.error("Can't find the class, Please check your method!", e);
         }
         return mapGenericNameClass;
     }
 
+    public static Type[] getMapParameterTypeField(Field mapField) {
+        Type mapMainType = mapField.getGenericType();
+        if (mapMainType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) mapMainType;
+            Type[] types = parameterizedType.getActualTypeArguments();
+            return types;
+        } else {
+            LOGGER.error("can not get the generic type!");
+            return null;
+        }
+    }
 
     public static Class<?> getPojoParameterType(Class<?> cls) {
         String parameterName = cls.getName();
@@ -103,8 +109,7 @@ public class ParamUtils {
         try {
             paramClass = Class.forName(parameterName);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            LOGGER.error("Can't find the class, Please check your method!");
+            LOGGER.error("Can't find the class, Please check your method!", e);
         }
         return paramClass;
     }
@@ -114,13 +119,14 @@ public class ParamUtils {
         return parameterTypes.length;
     }
 
-    public static Class<?>[] getMethodParamTypes(Class<?> cls, String methodName, List paramMessage, List<Integer> builderIndex, List<Object> handlers){
+    public static Class<?>[] getMethodParamTypes(Class<?> cls, String methodName, List paramMessage,
+                                                 List<Integer> builderIndex, List<Object> handlers) {
         Method[] methods = cls.getMethods();
         Class<?>[] cArg = new Class[paramMessage.size()];
-        for(Method method : methods){
-            if (method.getName().equals(methodName) && method.getParameterTypes().length == paramMessage.size()){
+        for (Method method : methods) {
+            if (method.getName().equals(methodName) && method.getParameterTypes().length == paramMessage.size()) {
                 boolean allMethodActual = RPCUtils.isAllMethodActual(method, paramMessage, builderIndex, handlers);
-                if(allMethodActual){
+                if (allMethodActual) {
                     Class<?>[] parameterTypes = method.getParameterTypes();     //得到参数类型
                     System.arraycopy(parameterTypes, 0, cArg, 0, parameterTypes.length);
                 }
@@ -129,7 +135,7 @@ public class ParamUtils {
         return cArg;
     }
 
-    public static Object[] getMethodParamObj(Method method, List methodParamList){
+    public static Object[] getMethodParamObj(Method method, List methodParamList) {
         int paramNumber = ParamUtils.getMethodParamsNumber(method);
         Object[] paramObj = new Object[paramNumber];
 

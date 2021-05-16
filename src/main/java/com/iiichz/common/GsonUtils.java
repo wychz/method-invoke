@@ -11,93 +11,101 @@ import java.util.Set;
 public class GsonUtils {
     public static <T> List<T> parseString2List(String json, Class<?> clazz) {
         Type type = new ParameterizedListTypeImpl(clazz);
-        List<T> list = new Gson().fromJson(json, type);
-        return list;
+        return new Gson().fromJson(json, type);
     }
 
     private static class ParameterizedListTypeImpl implements ParameterizedType {
         Class<?> clazz;
+
         public ParameterizedListTypeImpl(Class<?> clz) {
             clazz = clz;
         }
+
         @Override
         public Type[] getActualTypeArguments() {
-            return new Type[]{clazz};
+            return new Type[] {clazz};
         }
+
         @Override
         public Type getRawType() {
             return List.class;
         }
+
         @Override
         public Type getOwnerType() {
             return null;
         }
     }
 
-
-    public static Map parseString2Map(String json, Class<?> clazz1, Class<?> clazz2) {
+    public static Map<Object, Object> parseString2Map(String json, Class<?> clazz1, Class<?> clazz2) {
         Type type = new ParameterizedMapTypeImpl(clazz1, clazz2);
-        Map map = new Gson().fromJson(json, type);
-        return map;
+        return new Gson().fromJson(json, type);
     }
 
     private static class ParameterizedMapTypeImpl implements ParameterizedType {
         Class<?> clazz1;
+
         Class<?> clazz2;
+
         public ParameterizedMapTypeImpl(Class<?> clz1, Class<?> clz2) {
             clazz1 = clz1;
             clazz2 = clz2;
         }
+
         @Override
         public Type[] getActualTypeArguments() {
-            return new Type[]{clazz1, clazz2};
+            return new Type[] {clazz1, clazz2};
         }
+
         @Override
         public Type getRawType() {
             return Map.class;
         }
+
         @Override
         public Type getOwnerType() {
             return null;
         }
     }
 
-
     public static Set parseString2Set(String json, Class<?> clazz) {
         Type type = new ParameterizedSetTypeImpl(clazz);
-        Set set = new Gson().fromJson(json, type);
-        return set;
+        return new Gson().fromJson(json, type);
     }
 
     private static class ParameterizedSetTypeImpl implements ParameterizedType {
         Class<?> clazz;
+
         public ParameterizedSetTypeImpl(Class<?> clz) {
             clazz = clz;
         }
+
         @Override
         public Type[] getActualTypeArguments() {
-            return new Type[]{clazz};
+            return new Type[] {clazz};
         }
+
         @Override
         public Type getRawType() {
             return Set.class;
         }
+
         @Override
         public Type getOwnerType() {
             return null;
         }
     }
 
-    public static String removeBegEndBrace(String str){
+    public static String removeBegEndBrace(String str) {
         StringBuilder sb = new StringBuilder(str);
         int leftIndex = 0;
-        while(sb.charAt(leftIndex) == '['){
+        while (sb.charAt(leftIndex) == '[') {
             leftIndex++;
         }
         sb.substring(leftIndex);
         int rightIndex = sb.length() - 1;
         int count = 0;
-        while(sb.charAt(rightIndex) == ']' && count < leftIndex){
+        while (sb.charAt(rightIndex) == ']' && count < leftIndex) {
             rightIndex--;
             count++;
         }

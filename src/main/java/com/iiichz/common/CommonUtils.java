@@ -3,6 +3,8 @@ package com.iiichz.common;
 import com.alibaba.fastjson.JSON;
 import javafx.util.Pair;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.util.*;
@@ -10,6 +12,7 @@ import java.util.regex.Pattern;
 
 public class CommonUtils {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CommonUtils.class);
     private static Pattern numPattern = Pattern.compile("^-?[0-9]+\\.?[0-9]*$");
     private static Pattern objectPattern = Pattern.compile("^[a-zA-Z0-9.]+\\s\\[.+\\]$");
     private static Pattern listPattern = Pattern.compile("^\\[.*\\]$");
@@ -130,51 +133,55 @@ public class CommonUtils {
         try {
             notFormatJsonString = LogToJsonString(notFormatString);
         } catch (ParseException e) {
-            e.printStackTrace();
+            LOGGER.error("Exception: ", e);
         }
-        notFormatJsonString = notFormatJsonString.replace("=", ":");
+        if (notFormatJsonString != null) {
+            notFormatJsonString = notFormatJsonString.replace("=", ":");
+        }
         StringBuffer jsonFormatStr = new StringBuffer();
         int level = 0;
-        for (int index = 0; index < notFormatJsonString.length(); index++) {
-            char c = notFormatJsonString.charAt(index);
-            if (level > 0 && '\n' == jsonFormatStr.charAt(jsonFormatStr.length() - 1)) {
-                jsonFormatStr.append(getLevel(level));
-            }
-            switch (c) {
-                case '{':
-                case '[':
-                    jsonFormatStr.append(c + "\n");
-                    level++;
-                    break;
-                case ',':
-                    jsonFormatStr.append(c + "\n");
-                    break;
-                case '}':
-                case ']':
-                    if (jsonFormatStr.charAt(jsonFormatStr.length() - 1) == '\t'
-                            && jsonFormatStr.charAt(jsonFormatStr.length() - 1) == jsonFormatStr.charAt(
-                            jsonFormatStr.length() - 2)) {
-                        jsonFormatStr = new StringBuffer(
-                                StringUtils.substringBeforeLast(jsonFormatStr.toString(), "\n").trim());
-                        level--;
+        if (notFormatJsonString != null) {
+            for (int index = 0; index < notFormatJsonString.length(); index++) {
+                char c = notFormatJsonString.charAt(index);
+                if (level > 0 && '\n' == jsonFormatStr.charAt(jsonFormatStr.length() - 1)) {
+                    jsonFormatStr.append(getLevel(level));
+                }
+                switch (c) {
+                    case '{':
+                    case '[':
+                        jsonFormatStr.append(c).append("\n");
+                        level++;
+                        break;
+                    case ',':
+                        jsonFormatStr.append(c).append("\n");
+                        break;
+                    case '}':
+                    case ']':
+                        if (jsonFormatStr.charAt(jsonFormatStr.length() - 1) == '\t'
+                                && jsonFormatStr.charAt(jsonFormatStr.length() - 1) == jsonFormatStr.charAt(
+                                jsonFormatStr.length() - 2)) {
+                            jsonFormatStr = new StringBuffer(
+                                    StringUtils.substringBeforeLast(jsonFormatStr.toString(), "\n").trim());
+                            level--;
+                            jsonFormatStr.append(c);
+                        } else {
+                            jsonFormatStr.append("\n");
+                            level--;
+                            jsonFormatStr.append(getLevel(level));
+                            jsonFormatStr.append(c);
+                        }
+                        break;
+                    default:
                         jsonFormatStr.append(c);
-                    } else {
-                        jsonFormatStr.append("\n");
-                        level--;
-                        jsonFormatStr.append(getLevel(level));
-                        jsonFormatStr.append(c);
-                    }
-                    break;
-                default:
-                    jsonFormatStr.append(c);
-                    break;
+                        break;
+                }
             }
         }
         return jsonFormatStr.toString();
     }
 
     private static String getLevel(int level) {
-        StringBuffer levelStr = new StringBuffer();
+        StringBuilder levelStr = new StringBuilder();
         for (int levelI = 0; levelI < level; levelI++) {
             levelStr.append("\t");
         }

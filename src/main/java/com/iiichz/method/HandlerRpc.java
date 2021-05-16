@@ -19,9 +19,11 @@ import static com.iiichz.method.RPCUtils.*;
 public class HandlerRpc {
 
     private static final Gson MAPPER = new GsonBuilder().disableHtmlEscaping().create();
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RPCUtils.class);
 
-    protected static <T> T jsonToPojoHandlerProcess(Class<T> beanType, Map map, T t, List<Object> handlers) throws Exception{
+    protected static <T> T jsonToPojoHandlerProcess(Class<T> beanType, Map map, T t, List<Object> handlers)
+            throws Exception {
         Set keys = map.keySet();
         for (Object key : keys) {
             String keyTemp = (String) key;
@@ -30,18 +32,21 @@ public class HandlerRpc {
             Object value = map.get(key);
             String valueString = MAPPER.toJson(value);
             Field[] declaredFields = beanType.getDeclaredFields();
-            for (Field field : declaredFields){
+            for (Field field : declaredFields) {
                 String keyNameField = field.getName();
-                for(Object handler: handlers){
-                    String contains = handler.getClass().getDeclaredMethod("contains", String.class).invoke(handler, field.getName()).toString();
-                    if (keyTemp.equals(keyNameField)){
+                for (Object handler : handlers) {
+                    String contains = handler.getClass()
+                            .getDeclaredMethod("contains", String.class)
+                            .invoke(handler, field.getName())
+                            .toString();
+                    if (keyTemp.equals(keyNameField)) {
                         Class<?> type = field.getType();
                         Object o = null;
                         try {
-                            if(contains.equals("true")){
+                            if (contains.equals("true")) {
                                 o = processDiffClassHandler(type, field, valueString, handler);
                             } else {
-                                o = processDiffClass(type, field,valueString);
+                                o = processDiffClass(type, field, valueString);
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -55,7 +60,8 @@ public class HandlerRpc {
         return t;
     }
 
-    protected static void processHandler(Method method, List<Object> methodParamList, List<String> paramMessage, List<Object> handlers) {
+    protected static void processHandler(Method method, List<Object> methodParamList, List<String> paramMessage,
+                                         List<Object> handlers) {
         Class<?>[] parameterTypes = method.getParameterTypes();     //得到参数类型
         for (int i = 0; i < parameterTypes.length; i++) {
             Class<?> paramClass = parameterTypes[i];
@@ -63,7 +69,8 @@ public class HandlerRpc {
         }
     }
 
-    protected static Object processDiffClassHandler(Class<?> type, Field field, String valueString, Object handler) throws Exception{
+    protected static Object processDiffClassHandler(Class<?> type, Field field, String valueString, Object handler)
+            throws Exception {
         Object o = null;
         String actualClassString = handler.getClass().getDeclaredMethod("getType").invoke(handler).toString();
         Class<?> actualClass = Class.forName(actualClassString);
@@ -111,7 +118,7 @@ public class HandlerRpc {
     }
 
     private static Object processInterfaceParam(Field field, String valueString, Class<?> actualClass) {
-        if(actualClass.getSimpleName().endsWith("Builder")) {
+        if (actualClass.getSimpleName().endsWith("Builder")) {
             Object actualParam = null;
             try {
                 Object o = jsonToPojoProcess(valueString, actualClass, null);
@@ -131,14 +138,15 @@ public class HandlerRpc {
         return gson.fromJson(valueString, type);
     }
 
-    protected static boolean isHandlerMethodActualSpecify(Method method, List<String> paramMessage, int index, List<Object> handlers) {
+    protected static boolean isHandlerMethodActualSpecify(Method method, List<String> paramMessage, int index,
+                                                          List<Object> handlers) {
         Class<?>[] parameterTypes = method.getParameterTypes();
         Class<?> paramClass = parameterTypes[index];
         return judgeMethodParamList(paramClass, paramMessage, method, index, handlers);
     }
 
     protected static boolean canCastHandlerMode(Method method, List<String> paramMessage, List<Object> handlers) {
-        if(handlers == null){
+        if (handlers == null) {
             return false;
         }
         Class<?>[] parameterTypes = method.getParameterTypes();     //得到参数类型

@@ -22,6 +22,7 @@ import static com.iiichz.method.NormalRpc.*;
 public class RPCUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RPCUtils.class);
+
     private static final Gson MAPPER = new GsonBuilder().disableHtmlEscaping().create();
 
     public static String getMethodMessage(String message) {
@@ -42,7 +43,7 @@ public class RPCUtils {
         Object objTemp;
         objTemp = jsonObject.get("param");
         if (objTemp == null) {
-            if(jsonObject.get("param1") == null){
+            if (jsonObject.get("param1") == null) {
                 return null;
             }
             for (int i = 1; i < Integer.MAX_VALUE; i++) {
@@ -91,7 +92,7 @@ public class RPCUtils {
         String beanMode = null;
         JSONObject jsonObject = JSONObject.parseObject(message);
         Object objBeanMode = jsonObject.get("beanMode");
-        if(objBeanMode != null){
+        if (objBeanMode != null) {
             beanMode = objBeanMode.toString();
         }
         return beanMode;
@@ -114,7 +115,7 @@ public class RPCUtils {
         String handlerName = null;
         JSONObject jsonObject = JSONObject.parseObject(message);
         Object objHandlerName = jsonObject.get("handler");
-        if(objHandlerName != null){
+        if (objHandlerName != null) {
             handlerName = objHandlerName.toString();
         }
         return handlerName;
@@ -123,7 +124,7 @@ public class RPCUtils {
     public static List<Object> getHandlers(String message) {
         List<Object> handlers = null;
         String handlerNamesRes = getHandlerName(message);
-        if(handlerNamesRes != null){
+        if (handlerNamesRes != null) {
             handlers = new ArrayList<>();
             String[] handlerNames = handlerNamesRes.split(",");
             for (String handlerName : handlerNames) {
@@ -132,7 +133,7 @@ public class RPCUtils {
                     try {
                         handler = Class.forName(handlerName).newInstance();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LOGGER.error("Exception: ", e);
                     }
                 }
                 handlers.add(handler);
@@ -150,9 +151,9 @@ public class RPCUtils {
         try {
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            LOGGER.error("Can't find the class, Please check your method string!");
+            LOGGER.error("Can't find the class, Please check your method string!", e);
         }
+        assert clazz != null;
         Method[] methods = clazz.getDeclaredMethods();
         for (Method method : methods) {
             method.setAccessible(true);
@@ -163,7 +164,7 @@ public class RPCUtils {
                     addMethodParamListFromBuilderList(methodParamBuilderList, methodParamList, builderIndex);
                 } else if (canCastHandlerMode(method, paramMessage, handlers)) {            //使用Handler模式
                     processHandler(method, methodParamList, paramMessage, handlers);
-                } else if(canCastNormalMode(method, paramMessage)){             //使用普通模式
+                } else if (canCastNormalMode(method, paramMessage)) {             //使用普通模式
                     processNormal(method, methodParamList, paramMessage);
                 }
             }
@@ -175,8 +176,7 @@ public class RPCUtils {
         try {
             return jsonToPojoProcess(jsonData, beanType, handlers);
         } catch (Exception e) {
-            e.printStackTrace();
-            LOGGER.error("Can't cast json request to method param, Please check your param!");
+            LOGGER.error("Can't cast json request to method param, Please check your param!", e);
         }
         return null;
     }
@@ -190,8 +190,13 @@ public class RPCUtils {
         return true;
     }
 
-    protected static <T> List<T> jsonToList(String jsonData, Class<T> beanType) throws Exception{
+    protected static <T> List<T> jsonToList(String jsonData, Class<T> beanType) throws Exception {
         return GsonUtils.parseString2List(jsonData, beanType);
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     LOGGER.error("Can't cast json request to method param, Please check your param!");
+        // }
+        // return null;
     }
 
     protected static <T> boolean canJsonToList(String jsonData, Class<T> beanType) {
@@ -203,7 +208,14 @@ public class RPCUtils {
         return true;
     }
 
-    protected static <T> Set jsonToSet(String jsonData, Class<T> beanType) throws Exception{
+    protected static <T> Set jsonToSet(String jsonData, Class<T> beanType) throws Exception {
+        // try {
+        //     return GsonUtils.parseString2Set(jsonData, beanType);
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     LOGGER.error("Can't cast json request to method param, Please check your param!");
+        // }
+        // return null;
         return GsonUtils.parseString2Set(jsonData, beanType);
     }
 
@@ -216,7 +228,16 @@ public class RPCUtils {
         return true;
     }
 
-    protected static <K, V> Map jsonToMap(String jsonData, Class<K> beanTypeKey, Class<V> beanTypeValue) throws Exception{
+    protected static <K, V> Map jsonToMap(String jsonData, Class<K> beanTypeKey, Class<V> beanTypeValue)
+            throws Exception {
+        // JSON.parseObject(jsonData, new TypeReference<Map<K, V>>() { });
+        // try {
+        //     return GsonUtils.parseString2Map(jsonData, beanTypeKey, beanTypeValue);
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     LOGGER.error("Can't cast json request to method param, Please check your param!");
+        // }
+        // return null;
         return GsonUtils.parseString2Map(jsonData, beanTypeKey, beanTypeValue);
     }
 
@@ -233,21 +254,28 @@ public class RPCUtils {
         return jsonToPojoProcess(jsonData, beanType, null);
     }
 
-    protected static <T> T jsonToPojoProcess(String jsonData, Class<T> beanType, List<Object> handlers) throws Exception {
+    protected static <T> T jsonToPojoProcess(String jsonData, Class<T> beanType, List<Object> handlers)
+            throws Exception {
         String name = beanType.getName();
         T t = null;
         if (ofBuilderProcess(name)) {
             HashMap map = MAPPER.fromJson(jsonData, HashMap.class);
             T temp = beanType.newInstance();
             t = jsonToPojoBuilderProcess(beanType, map, temp, handlers);
-        } else if(handlers != null && handlers.size() > 0){
+        } else if (handlers != null && handlers.size() > 0) {
             HashMap map = MAPPER.fromJson(jsonData, HashMap.class);
             Constructor<T> declaredConstructor = beanType.getDeclaredConstructor();
             declaredConstructor.setAccessible(true);
             T temp = declaredConstructor.newInstance();
             t = jsonToPojoHandlerProcess(beanType, map, temp, handlers);
         } else {
-            t = MAPPER.fromJson(jsonData, beanType);
+            try {
+                t = MAPPER.fromJson(jsonData, beanType);
+            } catch (Exception e) {
+                HashMap map = MAPPER.fromJson(jsonData, HashMap.class);
+                T temp = beanType.newInstance();
+                t = jsonToPojoBuilderProcess(beanType, map, temp, handlers);
+            }
         }
         return t;
     }
@@ -280,11 +308,11 @@ public class RPCUtils {
                 methodParamList.add(methodParam);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Exception: ", e);
         }
     }
 
-    protected static Object processDiffClass(Class<?> type, Field field, String valueString) throws Exception{
+    protected static Object processDiffClass(Class<?> type, Field field, String valueString) throws Exception {
         Object o = null;
         if (ParamType.isListParameter(type)) {
             o = jsonToList(valueString, getGenericSoloParamClass(field));
@@ -305,13 +333,14 @@ public class RPCUtils {
         return isAllMethodActual(method, paramMessage, builderIndex, null);
     }
 
-    public static boolean isAllMethodActual(Method method, List<String> paramMessage, List<Integer> builderIndex, List<Object> handlers) {
+    protected static boolean isAllMethodActual(Method method, List<String> paramMessage, List<Integer> builderIndex,
+                                               List<Object> handlers) {
         Class<?>[] parameterTypes = method.getParameterTypes();     //得到参数类型
         boolean[] actualJudge = new boolean[parameterTypes.length];
         for (int i = 0; i < parameterTypes.length; i++) {
             if (builderIndex.contains(i)) {
                 actualJudge[i] = isBuilderMethodActualSpecify(method, paramMessage, builderIndex, i, handlers);
-            } else if(handlers != null && handlers.size() > 0){
+            } else if (handlers != null && handlers.size() > 0) {
                 actualJudge[i] = isHandlerMethodActualSpecify(method, paramMessage, i, handlers);
             } else {
                 actualJudge[i] = isNormalMethodActualSpecify(method, paramMessage, i);
@@ -325,7 +354,8 @@ public class RPCUtils {
         return true;
     }
 
-    protected static boolean judgeMethodParamList(Class<?> cls, List<String> paramMessage, Method method, int i, List<Object> handlers) {
+    protected static boolean judgeMethodParamList(Class<?> cls, List<String> paramMessage, Method method, int i,
+                                                  List<Object> handlers) {
         if (isBasicParameter(cls)) {
             return ParamUtils.canGetBasicMethodParam(paramMessage.get(i), cls);
         }
@@ -348,25 +378,24 @@ public class RPCUtils {
         return true;
     }
 
-
     /**
      * 得到field的泛型参数
+     *
      * @param field 某个field
-     * @return  得到对应的泛型参数
+     * @return 得到对应的泛型参数
      */
-    protected static Class getGenericSoloParamClass(Field field) {
+    protected static Class<?> getGenericSoloParamClass(Field field) {
         Type genericType = field.getGenericType();
-        Class genericClass = null;
-        if (genericType != null) {
-            if (genericType instanceof ParameterizedType) {
-                ParameterizedType pt = (ParameterizedType) genericType;
-                genericClass = (Class) pt.getActualTypeArguments()[0];
-            }
+        Class<?> genericClass = null;
+        if (genericType instanceof ParameterizedType) {
+            ParameterizedType pt = (ParameterizedType) genericType;
+            genericClass = (Class<?>) pt.getActualTypeArguments()[0];
         }
         return genericClass;
     }
 
-    private static boolean canFindActualMethod(String methodName, String methodNameMessage, Method method, List<String> paramMessage){
+    private static boolean canFindActualMethod(String methodName, String methodNameMessage, Method method,
+                                               List<String> paramMessage) {
         return methodName.equals(methodNameMessage) && method.getParameterTypes().length == paramMessage.size();
     }
 }
